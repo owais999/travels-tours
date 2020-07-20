@@ -1,4 +1,5 @@
 <?php
+
 namespace Modules\Core\Admin;
 
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class SettingsController extends AdminController
     public function index($group)
     {
 
-        if(empty($this->groups)){
+        if (empty($this->groups)) {
             $this->setGroups();
         }
 
@@ -35,13 +36,13 @@ class SettingsController extends AdminController
             'current_group' => $group,
             'groups'        => $this->groups,
             'settings'      => Settings::getSettings($group),
-//            'translations'      => Settings::getSettings($group,request()->query('lang')),
+            //            'translations'      => Settings::getSettings($group,request()->query('lang')),
             'breadcrumbs'   => [
                 ['name' => $this->groups[$group]['name'] ?? $this->groups[$group]['title'] ?? ''],
             ],
             'page_title'    => $this->groups[$group]['name'] ?? $this->groups[$group]['title'] ?? $group,
             'group'         => $this->groups[$group],
-            'enable_multi_lang'=>true
+            'enable_multi_lang' => true
         ];
         return view('Core::admin.settings.index', $data);
     }
@@ -49,7 +50,7 @@ class SettingsController extends AdminController
     public function store(Request $request, $group)
     {
 
-        if(empty($this->groups)){
+        if (empty($this->groups)) {
             $this->setGroups();
         }
 
@@ -125,11 +126,11 @@ class SettingsController extends AdminController
                 ];
                 break;
         }
-        if(!empty($group_data['keys'])) $keys = $group_data['keys'];
-        if(!empty($group_data['html_keys'])) $htmlKeys = $group_data['html_keys'];
+        if (!empty($group_data['keys'])) $keys = $group_data['keys'];
+        if (!empty($group_data['html_keys'])) $htmlKeys = $group_data['html_keys'];
 
         $lang = $request->input('lang');
-        if(is_default_lang($lang)) $lang = false;
+        if (is_default_lang($lang)) $lang = false;
 
 
         if (!empty($request->input())) {
@@ -137,14 +138,13 @@ class SettingsController extends AdminController
 
                 $all_values = $request->input();
                 //If we found callback validate data before save
-                if(!empty($group_data['filter_values_callback']) and is_callable($group_data['filter_values_callback']))
-                {
-                    $all_values = call_user_func($group_data['filter_values_callback'],$all_values,$request);
+                if (!empty($group_data['filter_values_callback']) and is_callable($group_data['filter_values_callback'])) {
+                    $all_values = call_user_func($group_data['filter_values_callback'], $all_values, $request);
                 }
 
 
                 foreach ($keys as $key) {
-                    $setting_key = $key.($lang ? '_'.$lang : '');
+                    $setting_key = $key . ($lang ? '_' . $lang : '');
 
                     $check = Settings::where('name', $setting_key)->first();
 
@@ -174,21 +174,21 @@ class SettingsController extends AdminController
                 }
             }
             //Clear Cache for currency
-            Session::put('bc_current_currency',"");
+            Session::put('bc_current_currency', "");
             return redirect()->back()->with('success', __('Settings Saved'));
         }
     }
 
 
-    protected function setGroups(){
+    protected function setGroups()
+    {
 
         $all = Settings::getSettingPages();
 
         $res = [];
 
-        if(!empty($all))
-        {
-            foreach ($all as $item){
+        if (!empty($all)) {
+            foreach ($all as $item) {
                 $res[$item['id']] = $item;
             }
         }

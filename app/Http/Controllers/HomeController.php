@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\User;
@@ -17,6 +18,7 @@ use Modules\Review\Models\Review;
 use Modules\Space\Models\Space;
 use Modules\Space\Models\SpaceTranslation;
 use Modules\Tour\Models\Tour;
+use Modules\Tour\Models\Flight;
 use Modules\Car\Models\Car;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -33,7 +35,6 @@ class HomeController extends Controller
      */
     public function __construct()
     {
-
     }
 
     /**
@@ -44,31 +45,30 @@ class HomeController extends Controller
     public function index()
     {
         $home_page_id = setting_item('home_page_id');
-        if($home_page_id && $page = Page::where("id",$home_page_id)->where("status","publish")->first())
-        {
+        if ($home_page_id && $page = Page::where("id", $home_page_id)->where("status", "publish")->first()) {
             $this->setActiveMenu($page);
             $translation = $page->translateOrOrigin(app()->getLocale());
             $seo_meta = $page->getSeoMetaWithTranslation(app()->getLocale(), $translation);
             $seo_meta['full_url'] = url("/");
             $seo_meta['is_homepage'] = true;
             $data = [
-                'row'=>$page,
-                "seo_meta"=> $seo_meta
+                'row' => $page,
+                "seo_meta" => $seo_meta
             ];
-            return view('Page::frontend.detail',$data);
+            return view('Page::frontend.detail', $data);
         }
         $model_News = News::where("status", "publish");
         $data = [
-            'rows'=>$model_News->paginate(5),
+            'rows' => $model_News->paginate(5),
             'model_category'    => NewsCategory::where("status", "publish"),
             'model_tag'         => Tag::query(),
             'model_news'        => News::where("status", "publish"),
             'breadcrumbs' => [
-                ['name' => __('News'), 'url' => url("/news") ,'class' => 'active'],
+                ['name' => __('News'), 'url' => url("/news"), 'class' => 'active'],
             ],
             "seo_meta" => News::getSeoMetaForPageList()
         ];
-        return view('News::frontend.index',$data);
+        return view('News::frontend.index', $data);
     }
 
     public function test()
@@ -76,7 +76,8 @@ class HomeController extends Controller
         Artisan::call('cache:clear');
     }
 
-    public function updateMigrate(){
+    public function updateMigrate()
+    {
         Artisan::call('cache:clear');
         Artisan::call('migrate', [
             '--force' => true,
@@ -102,8 +103,9 @@ class HomeController extends Controller
     /**
      * @todo Update From 1.0 to 1.1
      */
-    public function updateTo110(){
-        if(setting_item('update_to_110')){
+    public function updateTo110()
+    {
+        if (setting_item('update_to_110')) {
             return "Updated Up 1.10";
         }
         Permission::findOrCreate('dashboard_vendor_access');
@@ -116,16 +118,17 @@ class HomeController extends Controller
         $vendor->givePermissionTo('dashboard_vendor_access');
         $role = Role::findOrCreate('administrator');
         $role->givePermissionTo('dashboard_vendor_access');
-        Settings::store('update_to_110',true);
+        Settings::store('update_to_110', true);
         return "Migrate Up 1.10";
     }
 
     /**
      * @todo Update From 1.1.0 to 1.2.0
      */
-    public function updateTo120(){
+    public function updateTo120()
+    {
 
-        if(setting_item('update_to_120')){
+        if (setting_item('update_to_120')) {
             return "Updated Up 1.20";
         }
         Permission::findOrCreate('space_view');
@@ -149,7 +152,7 @@ class HomeController extends Controller
         $role->givePermissionTo('space_manage_others');
         $role->givePermissionTo('space_manage_attributes');
 
-        if(empty(setting_item('topbar_left_text'))){
+        if (empty(setting_item('topbar_left_text'))) {
             DB::table('core_settings')->insert(
                 [
                     'name'  => 'topbar_left_text',
@@ -164,40 +167,42 @@ class HomeController extends Controller
                 ]
             );
         }
-        Settings::store('update_to_120',true);
+        Settings::store('update_to_120', true);
         return "Migrate Up 1.20";
     }
 
-    public function updateTo130(){
+    public function updateTo130()
+    {
 
         Schema::table('users', function (Blueprint $table) {
             if (!Schema::hasColumn('users', 'vendor_commission_amount')) {
                 $table->integer('vendor_commission_amount')->nullable();
-                $table->decimal('total_before_fees',10,2)->nullable();
+                $table->decimal('total_before_fees', 10, 2)->nullable();
             }
             if (!Schema::hasColumn('users', 'vendor_commission_type')) {
-                $table->string('vendor_commission_type',30)->nullable();
+                $table->string('vendor_commission_type', 30)->nullable();
             }
         });
 
-       if(setting_item('update_to_130')){
-           return "Updated Up 1.30";
-       }
+        if (setting_item('update_to_130')) {
+            return "Updated Up 1.30";
+        }
 
         $this->__updateReviewVendorId();
 
         // Fix null status user
         User::query()->whereRaw('status is NULL')->update([
-            'status'=>'publish'
+            'status' => 'publish'
         ]);
 
-        Settings::store('update_to_130',true);
+        Settings::store('update_to_130', true);
         return "Migrate Up 1.30";
     }
-    public function updateTo140(){
+    public function updateTo140()
+    {
 
-        if(setting_item('update_to_140')){
-           return "Updated Up 1.40";
+        if (setting_item('update_to_140')) {
+            return "Updated Up 1.40";
         }
 
         Permission::findOrCreate('vendor_payout_view');
@@ -221,19 +226,27 @@ class HomeController extends Controller
         $role->givePermissionTo('hotel_manage_others');
         $role->givePermissionTo('hotel_manage_attributes');
 
+        $role->givePermissionTo('flight_view');
+        $role->givePermissionTo('flight_create');
+        $role->givePermissionTo('flight_update');
+        $role->givePermissionTo('flight_delete');
+        $role->givePermissionTo('flight_manage_others');
+        $role->givePermissionTo('flight_manage_attributes');
+
         $vendor = Role::findOrCreate('vendor');
         $vendor->givePermissionTo('hotel_view');
         $vendor->givePermissionTo('hotel_create');
         $vendor->givePermissionTo('hotel_update');
         $vendor->givePermissionTo('hotel_delete');
 
-        Settings::store('update_to_140',true);
+        Settings::store('update_to_140', true);
         return "Migrate Up 1.40";
     }
 
-    public function updateTo150(){
-        if(setting_item('update_to_150')){
-           return "Updated Up 1.50";
+    public function updateTo150()
+    {
+        if (setting_item('update_to_150')) {
+            return "Updated Up 1.50";
         }
         Permission::findOrCreate('plugin_manage');
         $role = Role::findOrCreate('administrator');
@@ -261,56 +274,57 @@ class HomeController extends Controller
         $role->givePermissionTo('car_manage_others');
         $role->givePermissionTo('car_manage_attributes');
 
-        Settings::store('update_to_150',true);
+        Settings::store('update_to_150', true);
         return "Migrate Up 1.50";
     }
 
-    public function updateTo151(){
-        if(setting_item('update_to_151')){
-           return "Updated Up 1.51";
+    public function updateTo151()
+    {
+        if (setting_item('update_to_151')) {
+            return "Updated Up 1.51";
         }
 
         $allServices = get_bookable_services();
-        foreach ($allServices as $service){
+        foreach ($allServices as $service) {
             $alls = $service::query()->whereNull('review_score')->get();
-            if(!empty($alls)){
-                foreach ($alls as $item){
+            if (!empty($alls)) {
+                foreach ($alls as $item) {
                     $item->update_service_rate();
                 }
             }
         }
 
-	    Schema::table(Tour::getTableName(), function (Blueprint $table) {
-		    if (!Schema::hasColumn(Tour::getTableName(), 'ical_import_url')) {
-			    $table->string('ical_import_url')->nullable();
-		    }
-	    });
-	    Schema::table(Space::getTableName(), function (Blueprint $table) {
-		    if (!Schema::hasColumn(Space::getTableName(), 'ical_import_url')) {
-			    $table->string('ical_import_url')->nullable();
-		    }
-	    });
-	    Schema::table(Hotel::getTableName(), function (Blueprint $table) {
-		    if (!Schema::hasColumn(Hotel::getTableName(), 'ical_import_url')) {
-			    $table->string('ical_import_url')->nullable();
-		    }
-	    });
-	    Schema::table(Car::getTableName(), function (Blueprint $table) {
-		    if (!Schema::hasColumn(Car::getTableName(), 'ical_import_url')) {
-			    $table->string('ical_import_url')->nullable();
-		    }
-	    });
+        Schema::table(Tour::getTableName(), function (Blueprint $table) {
+            if (!Schema::hasColumn(Tour::getTableName(), 'ical_import_url')) {
+                $table->string('ical_import_url')->nullable();
+            }
+        });
+        Schema::table(Space::getTableName(), function (Blueprint $table) {
+            if (!Schema::hasColumn(Space::getTableName(), 'ical_import_url')) {
+                $table->string('ical_import_url')->nullable();
+            }
+        });
+        Schema::table(Hotel::getTableName(), function (Blueprint $table) {
+            if (!Schema::hasColumn(Hotel::getTableName(), 'ical_import_url')) {
+                $table->string('ical_import_url')->nullable();
+            }
+        });
+        Schema::table(Car::getTableName(), function (Blueprint $table) {
+            if (!Schema::hasColumn(Car::getTableName(), 'ical_import_url')) {
+                $table->string('ical_import_url')->nullable();
+            }
+        });
 
-	    Schema::table(CarTranslation::getTableName(), function (Blueprint $table) {
-		    if (Schema::hasColumn(CarTranslation::getTableName(), 'extra_price')) {
-			    $table->dropColumn('extra_price');
-		    }
-	    });
-	    Schema::table(SpaceTranslation::getTableName(), function (Blueprint $table) {
-		    if (Schema::hasColumn(SpaceTranslation::getTableName(), 'extra_price')) {
-			    $table->dropColumn('extra_price');
-		    }
-	    });
+        Schema::table(CarTranslation::getTableName(), function (Blueprint $table) {
+            if (Schema::hasColumn(CarTranslation::getTableName(), 'extra_price')) {
+                $table->dropColumn('extra_price');
+            }
+        });
+        Schema::table(SpaceTranslation::getTableName(), function (Blueprint $table) {
+            if (Schema::hasColumn(SpaceTranslation::getTableName(), 'extra_price')) {
+                $table->dropColumn('extra_price');
+            }
+        });
 
 
         DB::statement('ALTER TABLE bravo_spaces MODIFY bed integer');
@@ -318,7 +332,7 @@ class HomeController extends Controller
         DB::statement('ALTER TABLE bravo_spaces MODIFY square integer');
         DB::statement('ALTER TABLE bravo_hotel_rooms MODIFY size integer');
 
-        Settings::store('update_to_151',true);
+        Settings::store('update_to_151', true);
         return "Migrate Up 1.51";
     }
     public function updateTo160()
@@ -326,112 +340,120 @@ class HomeController extends Controller
         if (setting_item('update_to_160')) {
             return "Updated Up 1.6.0";
         }
-        $bookings = Booking::query()->whereIn('status',[
+        $bookings = Booking::query()->whereIn('status', [
             'paid',
             'completed',
             'completed',
         ])->whereRaw('IFNULL(deposit,0) <= 0 ')->get();
-        foreach ($bookings as $booking)
-        {
-            if(!$booking->deposit){
+        foreach ($bookings as $booking) {
+            if (!$booking->deposit) {
                 $booking->paid = $booking->total;
                 $booking->save();
             }
         }
 
-	    Schema::table(HotelRoom::getTableName(), function (Blueprint $table) {
-		    if (!Schema::hasColumn(HotelRoom::getTableName(), 'ical_import_url')) {
-			    $table->string('ical_import_url')->nullable();
-		    }
-	    });
+        Schema::table(HotelRoom::getTableName(), function (Blueprint $table) {
+            if (!Schema::hasColumn(HotelRoom::getTableName(), 'ical_import_url')) {
+                $table->string('ical_import_url')->nullable();
+            }
+        });
 
-        Settings::store('update_to_160',true);
+        Settings::store('update_to_160', true);
         return "Migrate Up 1.6.0";
     }
 
     public function updateTo170()
     {
-//        if (setting_item('update_to_170')) {
-//            return "Updated Up 1.7.0";
-//        }
-        if(empty(setting_item('tour_map_search_fields'))){
+        //        if (setting_item('update_to_170')) {
+        //            return "Updated Up 1.7.0";
+        //        }
+        if (empty(setting_item('tour_map_search_fields'))) {
             DB::table('core_settings')->insert(
                 [
-                    'name'=>'tour_map_search_fields',
-                    'val'=>'[{"field":"location","attr":null,"position":"1"},{"field":"category","attr":null,"position":"2"},{"field":"date","attr":null,"position":"3"},{"field":"price","attr":null,"position":"4"},{"field":"advance","attr":null,"position":"5"}]',
-                    'group'=>'tour'
+                    'name' => 'tour_map_search_fields',
+                    'val' => '[{"field":"location","attr":null,"position":"1"},{"field":"category","attr":null,"position":"2"},{"field":"date","attr":null,"position":"3"},{"field":"price","attr":null,"position":"4"},{"field":"advance","attr":null,"position":"5"}]',
+                    'group' => 'tour'
                 ]
             );
         }
-        if(empty(setting_item('tour_search_fields'))){
+        if (empty(setting_item('tour_search_fields'))) {
             DB::table('core_settings')->insert(
                 [
-                    'name'=>'tour_search_fields',
-                    'val'=>'[{"title":"Location","field":"location","size":"6","position":"1"},{"title":"From - To","field":"date","size":"6","position":"2"}]',
-                    'group'=>'tour'
+                    'name' => 'tour_search_fields',
+                    'val' => '[{"title":"Location","field":"location","size":"6","position":"1"},{"title":"From - To","field":"date","size":"6","position":"2"}]',
+                    'group' => 'tour'
                 ]
             );
         }
-        if(empty(setting_item('space_search_fields'))){
+        if (empty(setting_item('space_search_fields'))) {
             DB::table('core_settings')->insert(
                 [
-                    'name'=>'space_search_fields',
-                    'val'=>'[{"title":"Location","field":"location","size":"4","position":"1"},{"title":"From - To","field":"date","size":"4","position":"2"},{"title":"Guests","field":"guests","size":"4","position":"3"}]',
-                    'group'=>'tour'
+                    'name' => 'space_search_fields',
+                    'val' => '[{"title":"Location","field":"location","size":"4","position":"1"},{"title":"From - To","field":"date","size":"4","position":"2"},{"title":"Guests","field":"guests","size":"4","position":"3"}]',
+                    'group' => 'tour'
                 ]
             );
         }
-        if(empty(setting_item('hotel_search_fields'))){
+        if (empty(setting_item('hotel_search_fields'))) {
             DB::table('core_settings')->insert(
                 [
-                    'name'=>'hotel_search_fields',
-                    'val'=>'[{"title":"Location","field":"location","size":"4","position":"1"},{"title":"Check In - Out","field":"date","size":"4","position":"2"},{"title":"Guests","field":"guests","size":"4","position":"3"}]',
-                    'group'=>'hotel'
+                    'name' => 'hotel_search_fields',
+                    'val' => '[{"title":"Location","field":"location","size":"4","position":"1"},{"title":"Check In - Out","field":"date","size":"4","position":"2"},{"title":"Guests","field":"guests","size":"4","position":"3"}]',
+                    'group' => 'hotel'
                 ]
             );
         }
-        if(empty(setting_item('car_search_fields'))){
+        if (empty(setting_item('flight_search_fields'))) {
             DB::table('core_settings')->insert(
                 [
-                    'name'=>'car_search_fields',
-                    'val'=>'[{"title":"Location","field":"location","size":"6","position":"1"},{"title":"From - To","field":"date","size":"6","position":"2"}]',
-                    'group'=>'car'
+                    'name' => 'flight_search_fields',
+                    'val' => '[{"title":"Location","field":"location","size":"4","position":"1"},{"title":"Check In - Out","field":"date","size":"4","position":"2"},{"title":"Guests","field":"guests","size":"4","position":"3"}]',
+                    'group' => 'flight'
+                ]
+            );
+        }
+        if (empty(setting_item('car_search_fields'))) {
+            DB::table('core_settings')->insert(
+                [
+                    'name' => 'car_search_fields',
+                    'val' => '[{"title":"Location","field":"location","size":"6","position":"1"},{"title":"From - To","field":"date","size":"6","position":"2"}]',
+                    'group' => 'car'
                 ]
             );
         }
 
-        if(empty(setting_item('enable_mail_vendor_registered'))){
+        if (empty(setting_item('enable_mail_vendor_registered'))) {
             DB::table('core_settings')->insert(
                 [
-                    'name'=>'enable_mail_vendor_registered',
-                    'val'=>'1',
-                    'group'=>'vendor'
+                    'name' => 'enable_mail_vendor_registered',
+                    'val' => '1',
+                    'group' => 'vendor'
                 ]
             );
             DB::table('core_settings')->insert(
                 [
-                    'name'=>'vendor_content_email_registered',
-                    'val'=>'<h1 style="text-align: center;">Welcome!</h1>
+                    'name' => 'vendor_content_email_registered',
+                    'val' => '<h1 style="text-align: center;">Welcome!</h1>
                             <h3>Hello [first_name] [last_name]</h3>
                             <p>Thank you for signing up with Booking Core! We hope you enjoy your time with us.</p>
                             <p>Regards,</p>
                             <p>Booking Core</p>',
-                    'group'=>'vendor'
+                    'group' => 'vendor'
                 ]
             );
         }
-        if(empty(setting_item('admin_enable_mail_vendor_registered'))){
+        if (empty(setting_item('admin_enable_mail_vendor_registered'))) {
             DB::table('core_settings')->insert(
                 [
-                    'name'=>'admin_enable_mail_vendor_registered',
-                    'val'=>'1',
-                    'group'=>'vendor'
+                    'name' => 'admin_enable_mail_vendor_registered',
+                    'val' => '1',
+                    'group' => 'vendor'
                 ]
             );
             DB::table('core_settings')->insert(
                 [
-                    'name'=>'admin_content_email_vendor_registered',
-                    'val'=>'<h3>Hello Administrator</h3>
+                    'name' => 'admin_content_email_vendor_registered',
+                    'val' => '<h3>Hello Administrator</h3>
                             <p>An user has been registered as Vendor. Please check the information bellow:</p>
                             <p>Full name: [first_name] [last_name]</p>
                             <p>Email: [email]</p>
@@ -439,11 +461,11 @@ class HomeController extends Controller
                             <p>You can approved the request here: [link_approved]</p>
                             <p>Regards,</p>
                             <p>Booking Core</p>',
-                    'group'=>'vendor'
+                    'group' => 'vendor'
                 ]
             );
         }
-        if(empty(setting_item('booking_enquiry_enable_mail_to_vendor_content'))){
+        if (empty(setting_item('booking_enquiry_enable_mail_to_vendor_content'))) {
             DB::table('core_settings')->insert([
                 [
                     'name'  => "booking_enquiry_enable_mail_to_vendor_content",
@@ -461,7 +483,7 @@ class HomeController extends Controller
                 ]
             ]);
         }
-        if(empty(setting_item('booking_enquiry_enable_mail_to_admin_content'))){
+        if (empty(setting_item('booking_enquiry_enable_mail_to_admin_content'))) {
             DB::table('core_settings')->insert([
                 [
                     'name'  => "booking_enquiry_enable_mail_to_admin_content",
@@ -481,14 +503,14 @@ class HomeController extends Controller
         }
 
 
-	    Schema::table('bravo_spaces',function(Blueprint $table){
-		    if(Schema::hasColumn('bravo_spaces','square')){
-			    DB::statement('ALTER TABLE bravo_spaces MODIFY square integer');
-		    }
-		    if(Schema::hasColumn('bravo_spaces','max_guests')){
-			    DB::statement('ALTER TABLE bravo_spaces MODIFY max_guests integer');
-		    }
-	    });
+        Schema::table('bravo_spaces', function (Blueprint $table) {
+            if (Schema::hasColumn('bravo_spaces', 'square')) {
+                DB::statement('ALTER TABLE bravo_spaces MODIFY square integer');
+            }
+            if (Schema::hasColumn('bravo_spaces', 'max_guests')) {
+                DB::statement('ALTER TABLE bravo_spaces MODIFY max_guests integer');
+            }
+        });
 
         Permission::findOrCreate('event_view');
         Permission::findOrCreate('event_create');
@@ -522,27 +544,26 @@ class HomeController extends Controller
         $role->givePermissionTo('event_update');
         $role->givePermissionTo('event_delete');
 
-        Settings::store('update_to_170',true);
+        Settings::store('update_to_170', true);
         return "Migrate Up 1.7.0";
     }
 
-    protected function __updateReviewVendorId(){
+    protected function __updateReviewVendorId()
+    {
         $all = Review::query()->whereNull('vendor_id')->get();
-        if(!empty($all))
-        {
-            foreach ($all as $item){
-                switch ($item->object_model)
-                {
+        if (!empty($all)) {
+            foreach ($all as $item) {
+                switch ($item->object_model) {
                     case "tour":
                         $tour = Tour::find($item->object_id);
-                        if($tour){
+                        if ($tour) {
                             $item->vendor_id = $tour->create_user;
                             $item->save();
                         }
                         break;
                     case "space":
                         $tour = Space::find($item->object_id);
-                        if($tour){
+                        if ($tour) {
                             $item->vendor_id = $tour->create_user;
                             $item->save();
                         }
@@ -552,13 +573,14 @@ class HomeController extends Controller
         }
     }
 
-    public function checkConnectDatabase(Request $request){
+    public function checkConnectDatabase(Request $request)
+    {
         $connection = $request->input('database_connection');
         config([
             'database' => [
-                'default' => $connection."_check",
+                'default' => $connection . "_check",
                 'connections' => [
-                    $connection."_check" => [
+                    $connection . "_check" => [
                         'driver' => $connection,
                         'host' => $request->input('database_hostname'),
                         'port' => $request->input('database_port'),
@@ -571,17 +593,17 @@ class HomeController extends Controller
         ]);
         try {
             DB::connection()->getPdo();
-            $check = DB::table('information_schema.tables')->where("table_schema","performance_schema")->get();
-            if(empty($check) and $check->count() == 0){
-                return $this->sendSuccess(false , __("Access denied for user!. Please check your configuration."));
+            $check = DB::table('information_schema.tables')->where("table_schema", "performance_schema")->get();
+            if (empty($check) and $check->count() == 0) {
+                return $this->sendSuccess(false, __("Access denied for user!. Please check your configuration."));
             }
-            if(DB::connection()->getDatabaseName()){
-                return $this->sendSuccess(false , __("Yes! Successfully connected to the DB: ".DB::connection()->getDatabaseName()));
-            }else{
-                return $this->sendSuccess(false , __("Could not find the database. Please check your configuration."));
+            if (DB::connection()->getDatabaseName()) {
+                return $this->sendSuccess(false, __("Yes! Successfully connected to the DB: " . DB::connection()->getDatabaseName()));
+            } else {
+                return $this->sendSuccess(false, __("Could not find the database. Please check your configuration."));
             }
         } catch (\Exception $e) {
-            return $this->sendError( $e->getMessage() );
+            return $this->sendError($e->getMessage());
         }
     }
 }

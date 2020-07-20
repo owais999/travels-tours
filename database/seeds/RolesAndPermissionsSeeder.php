@@ -107,6 +107,14 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::findOrCreate('tour_manage_others');
         Permission::findOrCreate('tour_manage_attributes');
 
+        // Flight
+        Permission::findOrCreate('flight_view');
+        Permission::findOrCreate('flight_create');
+        Permission::findOrCreate('flight_update');
+        Permission::findOrCreate('flight_delete');
+        Permission::findOrCreate('flight_manage_others');
+        Permission::findOrCreate('flight_manage_attributes');
+
         // Location
         Permission::findOrCreate('location_view');
         Permission::findOrCreate('location_create');
@@ -176,7 +184,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $role->givePermissionTo(Permission::all());
     }
 
-    public function initVendor(){
+    public function initVendor()
+    {
 
         $vendor = Role::findOrCreate('vendor');
 
@@ -206,5 +215,10 @@ class RolesAndPermissionsSeeder extends Seeder
         $vendor->givePermissionTo('event_create');
         $vendor->givePermissionTo('event_update');
         $vendor->givePermissionTo('event_delete');
+
+        $vendor->givePermissionTo('flight_view');
+        $vendor->givePermissionTo('flight_create');
+        $vendor->givePermissionTo('flight_update');
+        $vendor->givePermissionTo('flight_delete');
     }
 }
