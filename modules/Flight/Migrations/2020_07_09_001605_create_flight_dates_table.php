@@ -47,3 +47,4 @@ class CreateFlightDatesTable extends Migration
         Schema::dropIfExists('bravo_flight_dates');
     }
 }
+//awais
