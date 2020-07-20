@@ -1,7 +1,7 @@
 <form action="{{ route("hotel.search") }}" class="form bravo_form" method="get">
     <div class="g-field-search">
         <div class="row">
-            @php $hotel_search_fields = setting_item_array('hotel_search_fields');
+        @php $hotel_search_fields = setting_item_array('hotel_search_fields');
             $hotel_search_fields = array_values(\Illuminate\Support\Arr::sort($hotel_search_fields, function ($value) {
                 return $value['position'] ?? 0;
             }));
