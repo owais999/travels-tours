@@ -85,27 +85,27 @@
             fitBounds: true,
             center: [{
                 {
-                    $row - > map_lat ? ? "51.505"
+                    $row -> map_lat ? ? "51.505"
                 }
             }, {
                 {
-                    $row - > map_lng ? ? "-0.09"
+                    $row -> map_lng ? ? "-0.09"
                 }
             }],
             zoom: {
                 {
-                    $row - > map_zoom ? ? "8"
+                    $row -> map_zoom ? ? "8"
                 }
             },
             ready: function(engineMap) {
-                @if($row - > map_lat && $row - > map_lng)
+                @if($row -> map_lat && $row -> map_lng)
                 engineMap.addMarker([{
                     {
-                        $row - > map_lat
+                        $row -> map_lat
                     }
                 }, {
                     {
-                        $row - > map_lng
+                        $row -> map_lng
                     }
                 }], {
                     icon_options: {}

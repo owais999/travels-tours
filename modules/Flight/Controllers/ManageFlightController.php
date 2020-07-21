@@ -62,7 +62,7 @@ class ManageFlightController extends FrontendController
             ],
             'page_title'  => __("Manage Flights"),
         ];
-        return view('FLight::frontend.manageFlight.index', $data);
+        return view('Flight::frontend.manageFlight.index', $data);
     }
 
     public function createFlight(Request $request)
